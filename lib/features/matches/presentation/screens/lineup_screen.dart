@@ -1,0 +1,21 @@
+import 'package:flutter/material.dart';
+
+class LineupScreen extends StatelessWidget {
+  const LineupScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Lineup Screen')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Lineup Screen is ready for academy data integration.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}

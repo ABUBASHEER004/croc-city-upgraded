@@ -1,0 +1,31 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "croc-city-football-academy",
+          "appId": "1:603627312930:android:c625d9437bf7214f78377b",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "croc-city-football-academy",
+          "configurations": {
+            "android": "1:603627312930:android:c625d9437bf7214f78377b",
+            "ios": "1:603627312930:ios:2cd803363d0e8ce278377b",
+            "macos": "1:603627312930:ios:2cd803363d0e8ce278377b",
+            "web": "1:603627312930:web:98cada718581bdd378377b",
+            "windows": "1:603627312930:web:acff3bda06617fba78377b"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

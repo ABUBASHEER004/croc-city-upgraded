@@ -1,0 +1,586 @@
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../models/app_user.dart';
+import '../../../attendance/data/attendance_service.dart';
+import '../../../communication/data/announcement_service.dart';
+import '../../../communication/models/announcement.dart';
+import '../../../matches/data/fixture_firestore_service.dart';
+import '../../../matches/models/fixture.dart';
+import '../../../players/data/models/player.dart';
+import '../../../players/presentation/providers/player_provider.dart';
+import '../../../training/data/models/training_session.dart';
+import '../../../training/data/training_service.dart';
+
+class PlayerHomeScreen extends StatefulWidget {
+  const PlayerHomeScreen({
+    super.key,
+    required this.user,
+  });
+
+  final AppUser user;
+
+  @override
+  State<PlayerHomeScreen> createState() => _PlayerHomeScreenState();
+}
+
+class _PlayerHomeScreenState extends State<PlayerHomeScreen> {
+  final TrainingService _training = TrainingService();
+  final AnnouncementService _announcements = AnnouncementService();
+  final FixtureFirestoreService _fixtures = FixtureFirestoreService();
+  final AttendanceService _attendance = AttendanceService();
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      context
+          .read<PlayerProvider>()
+          .listenToPlayerByEmail(widget.user.email);
+    });
+  }
+
+  Future<void> _refresh() async {
+    if (!mounted) return;
+
+    context
+        .read<PlayerProvider>()
+        .listenToPlayerByEmail(widget.user.email);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final playerProvider = context.watch<PlayerProvider>();
+    final player =
+        playerProvider.players.isEmpty ? null : playerProvider.players.first;
+
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Player Dashboard'),
+        actions: [
+          IconButton(
+            onPressed: () => context.push('/player/coach'),
+            icon: const Icon(Icons.sports_outlined),
+            tooltip: 'Choose coach',
+          ),
+          IconButton(
+            onPressed: () => context.push('/profile'),
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Profile',
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          children: [
+            _PlayerHeader(
+              user: widget.user,
+              player: player,
+            ),
+
+            if (player != null && player.coachId.isEmpty) ...[
+              const SizedBox(height: 14),
+              Card(
+                child: ListTile(
+                  leading: const CircleAvatar(
+                    child: Icon(Icons.person_search_outlined),
+                  ),
+                  title: const Text(
+                    'Choose your coach',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Select the coach responsible for your development.',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/player/coach'),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 22),
+
+            Text(
+              'Your live academy feed',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            if (player == null)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(18),
+                  child: Text(
+                    'Ask the academy administrator to add your sign-in email '
+                    'to your player profile. Once linked, your coach, '
+                    'attendance and squad information will appear here '
+                    'automatically.',
+                  ),
+                ),
+              )
+            else ...[
+              _LiveTraining(
+                stream: _training.watchSessions(),
+                player: player,
+              ),
+              _LiveFixtures(
+                stream: _fixtures.watchFixtures(),
+                player: player,
+              ),
+              _LiveAttendance(
+                stream: _attendance.watchPlayerAttendance(player.id),
+              ),
+              _LiveAnnouncements(
+                stream: _announcements.watchAnnouncements(),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+class _PlayerHeader extends StatelessWidget {
+  const _PlayerHeader({
+    required this.user,
+    required this.player,
+  });
+
+  final AppUser user;
+  final Player? player;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Local variable allows Dart's null-safety promotion.
+    final currentPlayer = player;
+    final hasPhoto = user.photoUrl?.isNotEmpty == true;
+
+    String playerSubtitle;
+
+    if (currentPlayer == null) {
+      playerSubtitle = 'Linking your academy profile…';
+    } else {
+      playerSubtitle =
+          '#${currentPlayer.jerseyNumber} · ${currentPlayer.position}';
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primaryContainer,
+            theme.colorScheme.surface,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage:
+                hasPhoto ? NetworkImage(user.photoUrl!) : null,
+            child: hasPhoto
+                ? null
+                : const Icon(
+                    Icons.person,
+                    size: 30,
+                  ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'PLAYER CENTRE',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user.fullName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  playerSubtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
+class _LiveTraining extends StatelessWidget {
+  const _LiveTraining({
+    required this.stream,
+    required this.player,
+  });
+
+  final Stream<List<TrainingSession>> stream;
+  final Player player;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<TrainingSession>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final sessions = (snapshot.data ?? <TrainingSession>[])
+            .where(
+              (session) =>
+                  session.teamId.isEmpty ||
+                  session.teamId == player.teamId ||
+                  session.coachId == player.coachId,
+            )
+            .where(
+              (session) => session.scheduledAt.isAfter(
+                DateTime.now().subtract(
+                  const Duration(hours: 2),
+                ),
+              ),
+            )
+            .take(3)
+            .toList();
+
+        if (snapshot.hasError) {
+          return const _Section(
+            icon: Icons.fitness_center_outlined,
+            title: 'Training',
+            child: Text(
+              'Unable to load training updates right now.',
+            ),
+          );
+        }
+
+        return _Section(
+          icon: Icons.fitness_center_outlined,
+          title: 'Training',
+          child: sessions.isEmpty
+              ? const Text(
+                  'No upcoming training published.',
+                )
+              : Column(
+                  children: sessions.map((session) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        child: Icon(
+                          Icons.sports_soccer_outlined,
+                        ),
+                      ),
+                      title: Text(
+                        session.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${DateFormat('EEE, d MMM · h:mm a').format(session.scheduledAt)}'
+                        ' · '
+                        '${session.location.isEmpty ? 'Venue TBA' : session.location}',
+                      ),
+                    );
+                  }).toList(),
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _LiveFixtures extends StatelessWidget {
+  const _LiveFixtures({
+    required this.stream,
+    required this.player,
+  });
+
+  final Stream<List<Fixture>> stream;
+  final Player player;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Fixture>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final fixtures = (snapshot.data ?? <Fixture>[])
+            .where(
+              (fixture) =>
+                  fixture.teamId.isEmpty ||
+                  fixture.teamId == player.teamId ||
+                  fixture.coachId == player.coachId,
+            )
+            .take(3)
+            .toList();
+
+        if (snapshot.hasError) {
+          return const _Section(
+            icon: Icons.sports_soccer_outlined,
+            title: 'Matches',
+            child: Text(
+              'Unable to load fixtures right now.',
+            ),
+          );
+        }
+
+        return _Section(
+          icon: Icons.sports_soccer_outlined,
+          title: 'Matches',
+          child: fixtures.isEmpty
+              ? const Text(
+                  'No fixtures published.',
+                )
+              : Column(
+                  children: fixtures.map((fixture) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        child: Icon(
+                          fixture.isLive
+                              ? Icons.play_arrow
+                              : Icons.calendar_today_outlined,
+                        ),
+                      ),
+                      title: Text(
+                        '${fixture.homeTeam} vs ${fixture.awayTeam}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${DateFormat('EEE, d MMM · h:mm a').format(fixture.date)}'
+                        ' · '
+                        '${fixture.venue.isEmpty ? 'Venue TBA' : fixture.venue}',
+                      ),
+                      trailing: fixture.isLive
+                          ? const Chip(
+                              label: Text('LIVE'),
+                            )
+                          : null,
+                    );
+                  }).toList(),
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _LiveAttendance extends StatelessWidget {
+  const _LiveAttendance({
+    required this.stream,
+  });
+
+  final Stream<QuerySnapshot<Map<String, dynamic>>> stream;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: stream,
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<QuerySnapshot<Map<String, dynamic>>> snapshot,
+      ) {
+        final docs = snapshot.data?.docs ??
+            <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+        final recent = docs.take(5).toList();
+
+        if (snapshot.hasError) {
+          return const _Section(
+            icon: Icons.fact_check_outlined,
+            title: 'Attendance',
+            child: Text(
+              'Unable to load attendance right now.',
+            ),
+          );
+        }
+
+        return _Section(
+          icon: Icons.fact_check_outlined,
+          title: 'Attendance',
+          child: recent.isEmpty
+              ? const Text(
+                  'Your attendance will appear after your coach records a session.',
+                )
+              : Column(
+                  children: recent.map((doc) {
+                    final data = doc.data();
+
+                    final status =
+                        data['status']?.toString() ?? 'Recorded';
+
+                    final dateKey =
+                        data['dateKey']?.toString() ?? 'Academy session';
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        child: Icon(
+                          Icons.check_circle_outline,
+                        ),
+                      ),
+                      title: Text(
+                        status,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: Text(dateKey),
+                    );
+                  }).toList(),
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _LiveAnnouncements extends StatelessWidget {
+  const _LiveAnnouncements({
+    required this.stream,
+  });
+
+  final Stream<List<Announcement>> stream;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Announcement>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final announcements = (snapshot.data ?? <Announcement>[])
+            .where((announcement) => announcement.active)
+            .take(3)
+            .toList();
+
+        if (snapshot.hasError) {
+          return const _Section(
+            icon: Icons.campaign_outlined,
+            title: 'Announcements',
+            child: Text(
+              'Unable to load announcements right now.',
+            ),
+          );
+        }
+
+        return _Section(
+          icon: Icons.campaign_outlined,
+          title: 'Announcements',
+          child: announcements.isEmpty
+              ? const Text(
+                  'No new announcements.',
+                )
+              : Column(
+                  children: announcements.map((announcement) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const CircleAvatar(
+                        child: Icon(
+                          Icons.campaign_outlined,
+                        ),
+                      ),
+                      title: Text(
+                        announcement.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: Text(
+                        announcement.message,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Text(
+                        DateFormat('d MMM')
+                            .format(announcement.publishedAt),
+                      ),
+                    );
+                  }).toList(),
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  child: Icon(icon),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+

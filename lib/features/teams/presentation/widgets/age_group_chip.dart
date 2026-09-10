@@ -1,0 +1,1 @@
+import 'package:flutter/material.dart'; class AgeGroupChip extends StatelessWidget{const AgeGroupChip({super.key,required this.ageGroup});final String ageGroup;@override Widget build(BuildContext context)=>Chip(avatar:const Icon(Icons.cake_outlined,size:18),label:Text(ageGroup.isEmpty?'Age group not set':ageGroup));}
