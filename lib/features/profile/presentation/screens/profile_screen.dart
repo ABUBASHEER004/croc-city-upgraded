@@ -139,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 14),
           OutlinedButton.icon(
-            onPressed: () => Navigator.pushNamed(context, '/profile/edit'),
+            onPressed: () => context.push('/profile/edit'),
             icon: const Icon(Icons.edit_outlined),
             label: const Text('Edit profile details'),
           ),
