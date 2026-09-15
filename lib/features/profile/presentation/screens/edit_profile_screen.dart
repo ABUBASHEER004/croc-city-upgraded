@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../../presentation/providers/auth_provider.dart';
-import '../../../../services/auth_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -37,20 +37,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final user = context.read<AuthProvider>().currentUser;
-    if (user == null) return;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your profile is not available. Please sign in again.')),
+      );
+      return;
+    }
 
     setState(() => saving = true);
     try {
-      await AuthService.instance.updateProfile(
-        uid: user.uid,
+      await context.read<AuthProvider>().updateProfile(
         firstName: first.text.trim(),
         lastName: last.text.trim(),
         phone: phone.text.trim(),
       );
-      await context.read<AuthProvider>().refreshCurrentUser();
 
       if (!mounted) return;
-      Navigator.pop(context, true);
+      context.go('/profile');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -97,6 +100,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 labelText: 'Phone',
                 prefixIcon: Icon(Icons.phone_outlined),
               ),
+            ),
+            const SizedBox(height: 14),
+            Builder(
+              builder: (context) {
+                final email = context.read<AuthProvider>().currentUser?.email ?? '';
+                return TextFormField(
+                  initialValue: email,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: Icon(Icons.email_outlined),
+                    helperText: 'Email is your sign-in address and is not edited here.',
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 24),
             FilledButton.icon(

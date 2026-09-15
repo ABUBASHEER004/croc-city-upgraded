@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "production": "croc-city-football-academy",
+    "default": "croc-city-football-academy"
+  },
+  "targets": {},
+  "etags": {}
+}

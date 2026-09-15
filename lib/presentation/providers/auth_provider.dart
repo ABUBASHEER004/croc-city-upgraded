@@ -157,6 +157,25 @@ class AuthProvider extends ChangeNotifier {
     await loadCurrentUser();
   }
 
+  Future<void> updateProfile({
+    required String firstName,
+    required String lastName,
+    required String phone,
+  }) async {
+    final user = currentUser;
+    if (user == null) {
+      throw Exception('Your session has expired. Please sign in again.');
+    }
+
+    await _service.updateProfile(
+      uid: user.uid,
+      firstName: firstName,
+      lastName: lastName,
+      phone: phone,
+    );
+    await refreshCurrentUser();
+  }
+
   @override
   void dispose() {
     _authSubscription?.cancel();

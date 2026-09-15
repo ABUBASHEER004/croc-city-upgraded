@@ -84,6 +84,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('My Profile'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Edit profile',
+            onPressed: () => context.go('/profile/edit'),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -139,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 14),
           OutlinedButton.icon(
-            onPressed: () => context.push('/profile/edit'),
+            onPressed: () => context.go('/profile/edit'),
             icon: const Icon(Icons.edit_outlined),
             label: const Text('Edit profile details'),
           ),

@@ -238,18 +238,21 @@ class AuthService {
       throw Exception('Your session has expired. Please sign in again.');
     }
 
-    final displayName = '$firstName $lastName'.trim();
+    final cleanFirstName = firstName.trim();
+    final cleanLastName = lastName.trim();
+    final cleanPhone = phone.trim();
+    final displayName = '$cleanFirstName $cleanLastName'.trim();
 
-    await user.updateDisplayName(displayName);
-
-    await _firestore.collection('users').doc(uid).set(
-      {
-        'firstName': firstName,
-        'lastName': lastName,
-        'phone': phone,
-      },
-      SetOptions(merge: true),
-    );
+    try {
+      await user.updateDisplayName(displayName);
+      await _firestore.collection('users').doc(uid).update({
+        'firstName': cleanFirstName,
+        'lastName': cleanLastName,
+        'phone': cleanPhone,
+      });
+    } on FirebaseException catch (e) {
+      throw Exception('Could not save your profile: ${e.message ?? e.code}.');
+    }
   }
 
   // ================= ERROR HANDLER =================
