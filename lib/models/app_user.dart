@@ -5,6 +5,7 @@ class AppUser {
   final String firstName;
   final String lastName;
   final String email;
+  final String username;
   final String phone;
   final String role;
   final bool emailVerified;
@@ -16,6 +17,7 @@ class AppUser {
     required this.firstName,
     required this.lastName,
     required this.email,
+    required this.username,
     required this.phone,
     required this.role,
     required this.emailVerified,
@@ -32,8 +34,13 @@ class AppUser {
 
   bool get isAdmin => normalizedRole == 'admin' || normalizedRole == 'administrator';
   bool get isPlayer => normalizedRole == 'player';
-  bool get isParent => normalizedRole == 'parent';
+  bool get isPlayerParent => normalizedRole == 'player parent' || normalizedRole == 'parent';
+  bool get isStudentParent => normalizedRole == 'student parent';
+  bool get isParent => isPlayerParent || isStudentParent;
+  bool get isStudent => normalizedRole == 'student';
   bool get isCoach => normalizedRole == 'coach';
+  bool get isTeacher => normalizedRole == 'teacher';
+  bool get isStaff => normalizedRole == 'staff';
 
   Map<String, dynamic> toMap() {
     return {
@@ -41,6 +48,7 @@ class AppUser {
       'firstName': firstName,
       'lastName': lastName,
       'email': email,
+      'username': username,
       'phone': phone,
       'role': role,
       'emailVerified': emailVerified,
@@ -66,6 +74,7 @@ class AppUser {
       firstName: map['firstName']?.toString() ?? '',
       lastName: map['lastName']?.toString() ?? '',
       email: map['email']?.toString() ?? '',
+      username: map['username']?.toString() ?? '',
       phone: map['phone']?.toString() ?? '',
       role: map['role']?.toString() ?? 'Player',
       emailVerified: map['emailVerified'] == true,
@@ -79,6 +88,7 @@ class AppUser {
     String? firstName,
     String? lastName,
     String? email,
+    String? username,
     String? phone,
     String? role,
     bool? emailVerified,
@@ -90,6 +100,7 @@ class AppUser {
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       email: email ?? this.email,
+      username: username ?? this.username,
       phone: phone ?? this.phone,
       role: role ?? this.role,
       emailVerified: emailVerified ?? this.emailVerified,

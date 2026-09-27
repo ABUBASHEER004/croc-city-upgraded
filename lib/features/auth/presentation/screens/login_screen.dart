@@ -121,54 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> signInWithGoogle() async {
-    if (loading) return;
-
-    FocusScope.of(context).unfocus();
-
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      final auth = context.read<AuthProvider>();
-
-      await auth.signInWithGoogle();
-
-      if (!mounted) return;
-
-      final user = auth.currentUser;
-
-      if (user == null) {
-        throw Exception(
-          'Unable to load your account profile.',
-        );
-      }
-
-      if (!user.emailVerified) {
-        context.go('/verify-email');
-        return;
-      }
-
-      context.go('/dashboard');
-    } catch (e) {
-      if (!mounted) return;
-
-      _showError(
-        e.toString().replaceFirst(
-              'Exception: ',
-              '',
-            ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-      }
-    }
-  }
-
   void _showError(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -213,10 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         AuthTextField(
                           controller: emailController,
-                          label: 'Email Address',
+                          label: 'Username or Email',
                           icon: Icons.email_outlined,
-                          keyboardType:
-                              TextInputType.emailAddress,
+                          keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             final email =
                                 value?.trim() ?? '';
@@ -225,12 +176,12 @@ class _LoginScreenState extends State<LoginScreen> {
                               return 'Email is required';
                             }
 
-                            if (!RegExp(
-                              r'^[^@]+@[^@]+\.[^@]+$',
-                            ).hasMatch(email)) {
-                              return 'Enter a valid email address';
+                            if (email.contains('@') && !RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email)) {
+                              return 'Enter a valid email address or username';
                             }
-
+                            if (!email.contains('@') && !RegExp(r'^[a-zA-Z0-9._-]{3,}$').hasMatch(email)) {
+                              return 'Enter a valid username';
+                            }
                             return null;
                           },
                         ),
@@ -292,89 +243,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 22),
 
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: colorScheme.outlineVariant,
-                              ),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(
-                                horizontal: 14,
-                              ),
-                              child: Text(
-                                'OR',
-                                style: theme.textTheme.labelMedium
-                                    ?.copyWith(
-                                  fontWeight:
-                                      FontWeight.w800,
-                                  color:
-                                      colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: colorScheme.outlineVariant,
-                              ),
-                            ),
-                          ],
-                        ),
 
-                        const SizedBox(height: 22),
 
-                        SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: OutlinedButton.icon(
-                            onPressed:
-                                loading
-                                    ? null
-                                    : signInWithGoogle,
-                            icon: const _GoogleIcon(),
-                            label: const Text(
-                              'Continue with Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize:
-                                  const Size.fromHeight(54),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(14),
-                              ),
-                              side: BorderSide(
-                                color: colorScheme.outline,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 30),
-
-                        Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              "Don't have an account?",
-                            ),
-                            TextButton(
-                              onPressed: loading
-                                  ? null
-                                  : () => context.push(
-                                        '/register',
-                                      ),
-                              child:
-                                  const Text('Register'),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -391,27 +261,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 24,
-      height: 24,
-      child: Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
       ),
     );
   }

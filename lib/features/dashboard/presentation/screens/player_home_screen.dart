@@ -1,9 +1,11 @@
+import '../../../calendar/presentation/widgets/academy_calendar_card.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../models/app_user.dart';
 import '../../../attendance/data/attendance_service.dart';
@@ -13,8 +15,12 @@ import '../../../matches/data/fixture_firestore_service.dart';
 import '../../../matches/models/fixture.dart';
 import '../../../players/data/models/player.dart';
 import '../../../players/presentation/providers/player_provider.dart';
+import '../../../players/data/player_result_service.dart';
 import '../../../training/data/models/training_session.dart';
 import '../../../training/data/training_service.dart';
+import '../widgets/premium_ui.dart';
+import '../../../../constants/app_colors.dart';
+import '../../../communication/presentation/widgets/notification_bell.dart';
 
 class PlayerHomeScreen extends StatefulWidget {
   const PlayerHomeScreen({
@@ -33,6 +39,7 @@ class _PlayerHomeScreenState extends State<PlayerHomeScreen> {
   final AnnouncementService _announcements = AnnouncementService();
   final FixtureFirestoreService _fixtures = FixtureFirestoreService();
   final AttendanceService _attendance = AttendanceService();
+  final PlayerResultService _results = PlayerResultService();
 
   @override
   void initState() {
@@ -67,6 +74,7 @@ class _PlayerHomeScreenState extends State<PlayerHomeScreen> {
       appBar: AppBar(
         title: const Text('Player Dashboard'),
         actions: [
+          const NotificationBell(),
           IconButton(
             onPressed: () => context.push('/player/coach'),
             icon: const Icon(Icons.sports_outlined),
@@ -79,7 +87,8 @@ class _PlayerHomeScreenState extends State<PlayerHomeScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: PremiumDashboardBackground(
+        child: RefreshIndicator(
         onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -89,6 +98,8 @@ class _PlayerHomeScreenState extends State<PlayerHomeScreen> {
               user: widget.user,
               player: player,
             ),
+            const AcademyCalendarCard(compact: true),
+            const SizedBox(height: 18),
 
             if (player != null && player.coachId.isEmpty) ...[
               const SizedBox(height: 14),
@@ -148,16 +159,31 @@ class _PlayerHomeScreenState extends State<PlayerHomeScreen> {
                 stream: _attendance.watchPlayerAttendance(player.id),
               ),
               _LiveAnnouncements(
-                stream: _announcements.watchAnnouncements(),
+                stream: _announcements.watchForUser(audience: 'Players', email: widget.user.email),
               ),
+              _LiveResults(stream: _results.watchResults(player.id)),
             ],
           ],
+        ),
         ),
       ),
     );
   }
 }
 
+
+class _LiveResults extends StatelessWidget {
+  const _LiveResults({required this.stream});
+  final Stream<List<Map<String, dynamic>>> stream;
+  @override
+  Widget build(BuildContext context) => StreamBuilder<List<Map<String, dynamic>>>(stream: stream, builder: (context, snapshot) {
+    final results = snapshot.data ?? const <Map<String, dynamic>>[];
+    return _Section(icon: Icons.assessment_rounded, title: 'Results', child: results.isEmpty ? const Text('No published player results yet.') : Column(children: results.take(4).map((r) {
+      final url = r['pdfUrl']?.toString();
+      return ListTile(contentPadding: EdgeInsets.zero, leading: const CircleAvatar(child: Icon(Icons.emoji_events_rounded)), title: Text('${r['term'] ?? ''} · ${r['session'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text(r['coachComment']?.toString() ?? 'Performance report'), trailing: url == null ? null : FilledButton.tonal(onPressed: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication), child: const Text('Open')));
+    }).toList()));
+  });
+}
 
 class _PlayerHeader extends StatelessWidget {
   const _PlayerHeader({
@@ -170,82 +196,168 @@ class _PlayerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // Local variable allows Dart's null-safety promotion.
     final currentPlayer = player;
-    final hasPhoto = user.photoUrl?.isNotEmpty == true;
+    final playerPhoto = currentPlayer?.photoUrl.trim() ?? '';
+    final userPhoto = user.photoUrl?.trim() ?? '';
+    final profilePhoto = playerPhoto.isNotEmpty ? playerPhoto : userPhoto;
+    final hasProfilePhoto = profilePhoto.isNotEmpty;
 
-    String playerSubtitle;
+    final subtitle = currentPlayer == null
+        ? 'Your academy profile is being linked'
+        : '#${currentPlayer.jerseyNumber}  ·  ${currentPlayer.position.isEmpty ? 'Academy player' : currentPlayer.position}';
 
-    if (currentPlayer == null) {
-      playerSubtitle = 'Linking your academy profile…';
-    } else {
-      playerSubtitle =
-          '#${currentPlayer.jerseyNumber} · ${currentPlayer.position}';
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.primaryContainer,
-            theme.colorScheme.surface,
-          ],
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundImage:
-                hasPhoto ? NetworkImage(user.photoUrl!) : null,
-            child: hasPhoto
-                ? null
-                : const Icon(
-                    Icons.person,
-                    size: 30,
-                  ),
+    return Column(
+      children: [
+        Container(
+          height: 258,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                blurRadius: 30,
+                offset: Offset(0, 16),
+              ),
+            ],
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'PLAYER CENTRE',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.1,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/images/stadium.jpg',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(color: AppColors.primaryDark),
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primaryDark.withValues(alpha: .94),
+                      AppColors.primary.withValues(alpha: .76),
+                      Colors.black.withValues(alpha: .72),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  user.fullName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
+              ),
+              Positioned(
+                right: -18,
+                bottom: -14,
+                child: Opacity(
+                  opacity: .98,
+                  child: SizedBox(
+                    width: 185,
+                    height: 235,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(110),
+                        topRight: Radius.circular(110),
+                      ),
+                      child: hasProfilePhoto
+                          ? Image.network(
+                              profilePhoto,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                              errorBuilder: (_, __, ___) => Image.asset(
+                                'assets/images/player_placeholder.jpg',
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Image.asset(
+                              'assets/images/player_placeholder.jpg',
+                              fit: BoxFit.cover,
+                            ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  playerSubtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 22, 155, 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: Colors.white.withValues(alpha: .16)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.sports_soccer_rounded, color: AppColors.secondary, size: 16),
+                          SizedBox(width: 7),
+                          Text(
+                            'PLAYER CENTRE',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(color: Colors.white.withValues(alpha: .70), fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      user.fullName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 27,
+                        height: 1.04,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white.withValues(alpha: .76), fontSize: 12.5),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+        if (currentPlayer != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: PremiumStat(
+                  value: '#${currentPlayer.jerseyNumber}',
+                  label: 'Jersey number',
+                  icon: Icons.tag_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: PremiumStat(
+                  value: currentPlayer.position.isEmpty ? '—' : currentPlayer.position,
+                  label: 'Playing position',
+                  icon: Icons.sports_soccer_outlined,
+                ),
+              ),
+            ],
           ),
         ],
-      ),
+      ],
     );
   }
 }
-
-
 
 class _LiveTraining extends StatelessWidget {
   const _LiveTraining({
@@ -491,7 +603,7 @@ class _LiveAnnouncements extends StatelessWidget {
         if (snapshot.hasError) {
           return const _Section(
             icon: Icons.campaign_outlined,
-            title: 'Announcements',
+            title: 'Announcements & Coach Updates',
             child: Text(
               'Unable to load announcements right now.',
             ),
@@ -500,7 +612,7 @@ class _LiveAnnouncements extends StatelessWidget {
 
         return _Section(
           icon: Icons.campaign_outlined,
-          title: 'Announcements',
+          title: 'Announcements & Coach Updates',
           child: announcements.isEmpty
               ? const Text(
                   'No new announcements.',
@@ -577,10 +689,10 @@ class _Section extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             child,
-          ],
-        ),
-      ),
-    );
+         ],
+            ),
+          ),
+        );
+      
   }
 }
-

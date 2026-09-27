@@ -47,6 +47,26 @@ class PlayerProvider extends ChangeNotifier {
   }
 
 
+  void listenToParent(String parentId) {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    _subscription?.cancel();
+    _subscription = _repository.getPlayersByParent(parentId).listen(
+      (data) {
+        _players = data;
+        _loading = false;
+        _error = null;
+        notifyListeners();
+      },
+      onError: (error) {
+        _loading = false;
+        _error = error.toString();
+        notifyListeners();
+      },
+    );
+  }
+
   void listenToCoach(String coachId) {
     _loading = true;
     _error = null;

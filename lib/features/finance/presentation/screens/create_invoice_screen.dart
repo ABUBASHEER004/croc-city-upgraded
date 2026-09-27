@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../models/app_user.dart';
 import '../../../players/data/models/player.dart';
+import '../../../students/data/models/student.dart';
 import '../../data/finance_repository.dart';
 import '../../models/fee_category.dart';
 import '../../models/invoice.dart';
@@ -25,6 +26,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   String? _parentId;
   String? _playerId;
   String? _categoryId;
+  bool _education = false;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 30));
   bool _saving = false;
 
@@ -39,7 +41,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_parentId == null || _playerId == null) {
-      _message('Select both the player and parent/guardian.');
+      _message('Select the learner and parent/guardian.');
       return;
     }
 
@@ -53,17 +55,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     try {
       final firestore = FirebaseFirestore.instance;
       final parentDoc = await firestore.collection('users').doc(_parentId).get();
-      final playerDoc = await firestore.collection('players').doc(_playerId).get();
+      final learnerDoc = await firestore.collection(_education ? 'students' : 'players').doc(_playerId).get();
 
       if (!parentDoc.exists || parentDoc.data() == null) {
         throw Exception('The selected parent no longer exists.');
       }
-      if (!playerDoc.exists || playerDoc.data() == null) {
-        throw Exception('The selected player no longer exists.');
+      if (!learnerDoc.exists || learnerDoc.data() == null) {
+        throw Exception('The selected learner no longer exists.');
       }
 
       final parent = AppUser.fromMap({...parentDoc.data()!, 'uid': parentDoc.id});
-      final player = Player.fromMap({...playerDoc.data()!, 'id': playerDoc.id});
+      final learnerName = _education
+          ? Student.fromMap(learnerDoc.id, learnerDoc.data()!).fullName
+          : Player.fromMap({...learnerDoc.data()!, 'id': learnerDoc.id}).fullName;
 
       String categoryTitle = 'Academy fee';
       final categoryId = _categoryId;
@@ -82,8 +86,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         Invoice(
           id: '',
           invoiceNumber: invoiceNumber,
-          playerId: player.id,
-          playerName: player.fullName,
+          playerId: _playerId!,
+          playerName: learnerName,
           parentId: parent.uid,
           parentName: parent.fullName,
           title: _title.text.trim().isEmpty ? categoryTitle : _title.text.trim(),
@@ -124,7 +128,16 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           children: [
             Text('New academy charge', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
             const SizedBox(height: 6),
-            const Text('Link the charge to the correct player and parent so the parent portal updates automatically.'),
+            const Text('Link the charge to the correct learner and parent so the parent portal updates automatically.'),
+            const SizedBox(height: 14),
+            SwitchListTile.adaptive(
+              value: _education,
+              onChanged: _saving ? null : (value) => setState(() { _education = value; _playerId = null; }),
+              title: const Text('Education billing'),
+              subtitle: Text(_education ? 'This invoice is for a student / student parent.' : 'This invoice is for a football player / player parent.'),
+              secondary: const Icon(Icons.school_outlined),
+              contentPadding: EdgeInsets.zero,
+            ),
             const SizedBox(height: 22),
             _ParentPicker(
               selectedId: _parentId,
@@ -132,9 +145,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               onChanged: (value) => setState(() => _parentId = value),
             ),
             const SizedBox(height: 14),
-            _PlayerPicker(
+            _LearnerPicker(
               selectedId: _playerId,
               enabled: !_saving,
+              education: _education,
               onChanged: (value) => setState(() => _playerId = value),
             ),
             const SizedBox(height: 14),
@@ -241,7 +255,7 @@ class _ParentPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'Parent').snapshots(),
+        stream: FirebaseFirestore.instance.collection('users').where('role', whereIn: ['Parent', 'Player Parent', 'Student Parent']).snapshots(),
         builder: (context, snapshot) {
           final parents = snapshot.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[];
           return DropdownButtonFormField<String>(
@@ -258,26 +272,29 @@ class _ParentPicker extends StatelessWidget {
       );
 }
 
-class _PlayerPicker extends StatelessWidget {
-  const _PlayerPicker({required this.selectedId, required this.enabled, required this.onChanged});
+class _LearnerPicker extends StatelessWidget {
+  const _LearnerPicker({required this.selectedId, required this.enabled, required this.education, required this.onChanged});
   final String? selectedId;
   final bool enabled;
+  final bool education;
   final ValueChanged<String?> onChanged;
 
   @override
   Widget build(BuildContext context) => StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('players').snapshots(),
+        stream: FirebaseFirestore.instance.collection(education ? 'students' : 'players').snapshots(),
         builder: (context, snapshot) {
-          final players = snapshot.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          final docs = snapshot.data?.docs ?? <QueryDocumentSnapshot<Map<String, dynamic>>>[];
           return DropdownButtonFormField<String>(
             initialValue: selectedId,
-            decoration: const InputDecoration(labelText: 'Player', prefixIcon: Icon(Icons.person_outline)),
-            items: players.map((doc) {
-              final player = Player.fromMap({...doc.data(), 'id': doc.id});
-              return DropdownMenuItem<String>(value: player.id, child: Text(player.fullName));
+            decoration: InputDecoration(labelText: education ? 'Student' : 'Player', prefixIcon: Icon(education ? Icons.school_outlined : Icons.person_outline)),
+            items: docs.map((doc) {
+              final name = education
+                  ? Student.fromMap(doc.id, doc.data()).fullName
+                  : Player.fromMap({...doc.data(), 'id': doc.id}).fullName;
+              return DropdownMenuItem<String>(value: doc.id, child: Text(name));
             }).toList(),
             onChanged: enabled ? onChanged : null,
-            validator: (value) => value == null ? 'Select a player' : null,
+            validator: (value) => value == null ? 'Select a learner' : null,
           );
         },
       );

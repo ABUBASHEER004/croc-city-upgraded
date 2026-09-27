@@ -72,6 +72,7 @@ await db.collection('users').doc(user.uid).set({
   firstName: displayName.split(/\s+/)[0] || 'Croc City',
   lastName: displayName.split(/\s+/).slice(1).join(' ') || 'Administrator',
   email,
+  username: email.split('@')[0].toLowerCase(),
   phone: '',
   role: 'Administrator',
   admin: true,

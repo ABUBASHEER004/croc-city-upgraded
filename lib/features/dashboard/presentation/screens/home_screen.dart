@@ -1,3 +1,4 @@
+import '../../../calendar/presentation/widgets/academy_calendar_card.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +15,9 @@ import '../../../coaches/presentation/providers/coach_provider.dart';
 import '../../../training/data/models/training_session.dart';
 import '../../../training/data/training_service.dart';
 import '../widgets/dashboard_header.dart';
+import '../widgets/premium_ui.dart';
+import '../../../../constants/app_colors.dart';
+import '../../../communication/presentation/widgets/notification_bell.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -59,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Academy Command Centre'),
         actions: [
+          const NotificationBell(),
           IconButton(
             tooltip: 'Announcements',
             onPressed: () => context.push('/announcements'),
@@ -78,27 +83,17 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            DashboardHeader(name: displayName, role: 'Administrator'),
+            PremiumHero(eyebrow: 'Croc City Football Academy', title: 'Run the academy. Build the future.', subtitle: 'Your premium command centre for players, teams, coaches, matchday, training and finance.', image: 'assets/images/stadium.jpg', icon: Icons.shield_rounded),
             const SizedBox(height: 18),
+            const AcademyCalendarCard(),
+            const SizedBox(height: 22),
             LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxWidth < 520;
                 final children = <Widget>[
-                  _Stat(
-                    value: players.length.toString(),
-                    label: 'Players',
-                    icon: Icons.people_outline,
-                  ),
-                  _Stat(
-                    value: teams.length.toString(),
-                    label: 'Teams',
-                    icon: Icons.groups_outlined,
-                  ),
-                  _Stat(
-                    value: coaches.length.toString(),
-                    label: 'Coaches',
-                    icon: Icons.sports_outlined,
-                  ),
+                  PremiumStat(value: players.length.toString(), label: 'Registered players', icon: Icons.people_alt_rounded),
+                  PremiumStat(value: teams.length.toString(), label: 'Active teams', icon: Icons.groups_rounded),
+                  PremiumStat(value: coaches.length.toString(), label: 'Coaching staff', icon: Icons.sports_soccer_rounded),
                 ];
 
                 if (compact) {
@@ -129,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             const SizedBox(height: 24),
+            Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.border)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
               'Management shortcuts',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -172,7 +168,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 26),
+            ])),
+            const SizedBox(height: 20),
             _LivePanel<TrainingSession>(
               title: 'Training schedule',
               icon: Icons.fitness_center_outlined,

@@ -12,6 +12,7 @@ import 'create_invoice_screen.dart';
 import 'fee_categories_screen.dart';
 import 'payment_history_screen.dart';
 import 'scholarship_screen.dart';
+import 'pay_invoice_screen.dart';
 
 class FinanceDashboardScreen extends StatelessWidget {
   const FinanceDashboardScreen({super.key});
@@ -204,7 +205,70 @@ class _InvoiceRow extends StatelessWidget {
   const _InvoiceRow({required this.invoice, required this.admin});
   final Invoice invoice; final bool admin;
   @override
-  Widget build(BuildContext context) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(child: Icon(invoice.isPaid ? Icons.check : Icons.receipt_long_outlined)), title: Text('${invoice.invoiceNumber} · ${invoice.title}', style: const TextStyle(fontWeight: FontWeight.w800)), subtitle: Text('${invoice.playerName.isEmpty ? 'Player' : invoice.playerName}${admin && invoice.parentName.isNotEmpty ? ' · ${invoice.parentName}' : ''}\nDue ${DateFormat('d MMM yyyy').format(invoice.dueDate)} · ${invoice.displayStatus}'), isThreeLine: true, trailing: Text(_money(invoice.balance), style: const TextStyle(fontWeight: FontWeight.w900)));
+  Widget build(BuildContext context) {
+    final canPay = !admin && !invoice.isPaid && invoice.balance > 0.009;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            backgroundColor: invoice.isPaid
+                ? Colors.green.withValues(alpha: .10)
+                : Theme.of(context).colorScheme.primaryContainer,
+            child: Icon(
+              invoice.isPaid ? Icons.check_rounded : Icons.receipt_long_outlined,
+              color: invoice.isPaid ? Colors.green : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${invoice.invoiceNumber} · ${invoice.title}',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${invoice.playerName.isEmpty ? 'Player' : invoice.playerName}${admin && invoice.parentName.isNotEmpty ? ' · ${invoice.parentName}' : ''}\nDue ${DateFormat('d MMM yyyy').format(invoice.dueDate)} · ${invoice.displayStatus}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _money(invoice.balance),
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              if (canPay) ...[
+                const SizedBox(height: 7),
+                FilledButton.tonal(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => PayInvoiceScreen(invoice: invoice),
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(0, 38),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                  ),
+                  child: const Text('Pay now'),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _EmptyFinance extends StatelessWidget {

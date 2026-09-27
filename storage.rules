@@ -2,43 +2,22 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // User profile photos
-    // Dart service uploads to:
-    // profile_photos/users/{uid}.{extension}
     match /profile_photos/users/{userFile} {
       allow read: if request.auth != null;
-
-      allow write, delete: if request.auth != null
-        && (
-          userFile == request.auth.uid + '.jpg'
-          || userFile == request.auth.uid + '.jpeg'
-          || userFile == request.auth.uid + '.png'
-          || userFile == request.auth.uid + '.webp'
-          || userFile == request.auth.uid + '.gif'
-          || request.auth.token.admin == true
-        );
+      allow write, delete: if request.auth != null && (userFile == request.auth.uid + '.jpg' || userFile == request.auth.uid + '.jpeg' || userFile == request.auth.uid + '.png' || userFile == request.auth.uid + '.webp' || request.auth.token.admin == true);
     }
-
-    // Player photos — admin controlled
     match /profile_photos/players/{playerFile} {
       allow read: if request.auth != null;
-
-      allow write, delete: if request.auth != null
-        && request.auth.token.admin == true;
+      allow write, delete: if request.auth != null && request.auth.token.admin == true;
     }
-
-    // Coach photos — admin controlled
     match /profile_photos/coaches/{coachFile} {
       allow read: if request.auth != null;
-
-      allow write, delete: if request.auth != null
-        && request.auth.token.admin == true;
+      allow write, delete: if request.auth != null && request.auth.token.admin == true;
     }
-
-    // Deny everything else
-    match /{allPaths=**} {
-      allow read, write: if false;
+    match /student_results/{studentId}/{resultId} {
+      allow read: if request.auth != null;
+      allow write, delete: if request.auth != null && request.auth.token.admin == true;
     }
+    match /{allPaths=**} { allow read, write: if false; }
   }
 }

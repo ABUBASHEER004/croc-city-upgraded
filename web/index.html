@@ -36,6 +36,29 @@
   name="google-signin-client_id"
   content="603627312930-tijapebk39bqtt40s2ci3t07ttka8sqs.apps.googleusercontent.com"
 />
+  <script src="https://js.paystack.co/v2/inline.js"></script>
+  <script>
+    // Croc City uses Paystack's server-initialized access_code flow on web.
+    // The secret key never reaches the browser.
+    window.crocCityPaystackResume = function(accessCode) {
+      return new Promise(function(resolve, reject) {
+        try {
+          if (typeof PaystackPop === 'undefined') {
+            reject(new Error('Paystack checkout library could not be loaded.'));
+            return;
+          }
+          const popup = new PaystackPop();
+          popup.resumeTransaction(accessCode, {
+            onSuccess: function() { resolve(true); },
+            onCancel: function() { resolve(false); },
+            onError: function(error) { reject(error || new Error('Paystack checkout failed.')); }
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    };
+  </script>
 </head>
 <body>
   <!--

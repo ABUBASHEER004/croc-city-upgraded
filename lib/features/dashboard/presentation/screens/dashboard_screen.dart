@@ -5,6 +5,10 @@ import 'package:provider/provider.dart';
 import '../../../../models/app_user.dart';
 import '../../../../presentation/providers/auth_provider.dart';
 import 'home_screen.dart';
+import '../../../admin/presentation/screens/admin_dashboard_screen.dart';
+import '../../../students/presentation/screens/student_portal_screen.dart';
+import '../../../students/presentation/screens/teacher_home_screen.dart';
+import 'staff_home_screen.dart';
 import 'player_home_screen.dart';
 import '../../../coaches/presentation/screens/coach_home_screen.dart';
 import '../../../profile/presentation/screens/profile_screen.dart';
@@ -35,31 +39,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final isAdmin = user.isAdmin;
     final isCoach = user.isCoach;
-    final isParent = user.isParent;
+    final isPlayerParent = user.isPlayerParent;
+    final isStudent = user.isStudent;
+    final isTeacher = user.isTeacher;
+    final isStaff = user.isStaff;
+    final isStudentParent = user.isStudentParent;
 
     final pages = isAdmin
-        ? const <Widget>[
-            HomeScreen(),
-            PlayersScreen(),
-            TeamsScreen(),
-            CoachesScreen(),
-            const FinanceDashboardScreen(),
-            ProfileScreen(),
-          ]
-        : isCoach
-            ? <Widget>[
-                CoachHomeScreen(user: user),
-                const ProfileScreen(),
-              ]
-            : isParent
-                ? <Widget>[
-                    ParentHomeScreen(user: user),
-                    const ProfileScreen(),
-                  ]
-                : <Widget>[
-                    PlayerHomeScreen(user: user),
-                    const ProfileScreen(),
-                  ];
+        ? const <Widget>[AdminDashboardScreen(), ProfileScreen()]
+        : isStudentParent
+            ? <Widget>[ParentHomeScreen(user: user), const ProfileScreen()]
+            : isTeacher
+                ? <Widget>[TeacherHomeScreen(user: user), const ProfileScreen()]
+                : isStaff
+                    ? <Widget>[StaffHomeScreen(user: user), const ProfileScreen()]
+                    : isStudent
+                ? <Widget>[StudentPortalScreen(userName: user.fullName, uid: user.uid, parent: false), const ProfileScreen()]
+                : isCoach
+                    ? <Widget>[CoachHomeScreen(user: user), const ProfileScreen()]
+                    : isPlayerParent
+                        ? <Widget>[ParentHomeScreen(user: user), const ProfileScreen()]
+                        : <Widget>[PlayerHomeScreen(user: user), const ProfileScreen()];
 
     if (_currentIndex >= pages.length) {
       _currentIndex = 0;
@@ -75,11 +75,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
         destinations: isAdmin
             ? const [
-                NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-                NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Players'),
-                NavigationDestination(icon: Icon(Icons.groups_outlined), selectedIcon: Icon(Icons.groups), label: 'Teams'),
-                NavigationDestination(icon: Icon(Icons.sports_outlined), selectedIcon: Icon(Icons.sports), label: 'Coaches'),
-                NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Finance'),
+                NavigationDestination(icon: Icon(Icons.admin_panel_settings_outlined), selectedIcon: Icon(Icons.admin_panel_settings), label: 'Command'),
                 NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
               ]
             : const [

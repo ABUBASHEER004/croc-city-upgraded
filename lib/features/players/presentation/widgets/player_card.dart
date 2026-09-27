@@ -7,6 +7,7 @@ class PlayerCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final bool showActions;
 
   const PlayerCard({
     super.key,
@@ -14,6 +15,7 @@ class PlayerCard extends StatelessWidget {
     required this.onTap,
     this.onEdit,
     this.onDelete,
+    this.showActions = true,
   });
 
   @override
@@ -44,7 +46,8 @@ class PlayerCard extends StatelessWidget {
           ],
         ),
 
-        trailing: PopupMenuButton<String>(
+        trailing: showActions
+            ? PopupMenuButton<String>(
           onSelected: (value) {
             switch (value) {
               case "edit":
@@ -59,7 +62,8 @@ class PlayerCard extends StatelessWidget {
             PopupMenuItem(value: "edit", child: Text("Edit")),
             PopupMenuItem(value: "delete", child: Text("Delete")),
           ],
-        ),
+        )
+            : null,
       ),
     );
   }

@@ -52,6 +52,19 @@ class PlayerFirestoreService {
   }
 
 
+  /// Live players linked to a parent account.
+  Stream<List<Player>> getPlayersByParent(String parentId) {
+    return _players
+        .where('parentId', isEqualTo: parentId)
+        .orderBy('firstName')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return Player.fromMap(data);
+            }).toList());
+  }
+
   /// Live players assigned to a coach.
   Stream<List<Player>> getPlayersByCoach(String coachId) {
     return _players

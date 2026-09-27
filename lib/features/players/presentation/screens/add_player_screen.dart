@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,7 +10,6 @@ import '../../data/models/player.dart';
 import '../../../../services/profile_photo_service.dart';
 import '../providers/player_provider.dart';
 import '../../../teams/presentation/providers/team_provider.dart';
-import '../../../coaches/presentation/providers/coach_provider.dart';
 
 class AddPlayerScreen extends StatefulWidget {
   const AddPlayerScreen({super.key});
@@ -42,6 +42,7 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
   String preferredFoot = 'Right';
   String? selectedTeam;
   String? selectedCoach;
+  String? selectedParentId;
 
   XFile? image;
 
@@ -194,7 +195,6 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
     });
 
     try {
-      context.read<CoachProvider>().listenToCoaches();
       final playerProvider = context.read<PlayerProvider>();
 
       // --------------------------------------------------------
@@ -262,6 +262,7 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
         preferredFoot: preferredFoot,
 
         // Parent / guardian
+        parentId: selectedParentId ?? '',
         parentName: guardianController.text.trim(),
         parentPhone: guardianPhoneController.text.trim(),
 
@@ -343,6 +344,94 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
     }
   }
 
+  Widget _buildCoachSelector() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'Coach')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) return const Text('Unable to load coach accounts.');
+        if (snapshot.connectionState == ConnectionState.waiting) return const LinearProgressIndicator();
+        final docs = snapshot.data?.docs ?? const [];
+        final availableCoachIds = docs.map((doc) => doc.id).toSet();
+        final selectedCoachValue = availableCoachIds.contains(selectedCoach) ? selectedCoach : null;
+        return DropdownButtonFormField<String>(
+          initialValue: selectedCoachValue,
+          decoration: inputDecoration(label: 'Coach', icon: Icons.sports_outlined),
+          hint: const Text('Assign coach (optional)'),
+          items: [
+            const DropdownMenuItem<String>(value: '', child: Text('No coach assigned yet')),
+            ...docs.map((doc) {
+              final data = doc.data();
+              final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+              final email = data['email']?.toString() ?? '';
+              return DropdownMenuItem<String>(
+                value: doc.id,
+                child: Text(name.isEmpty ? email : '$name · $email', overflow: TextOverflow.ellipsis),
+              );
+            }),
+          ],
+          onChanged: loading ? null : (value) => setState(() => selectedCoach = value),
+        );
+      },
+    );
+  }
+
+  Widget _buildParentSelector() {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .where('role', whereIn: const ['Parent', 'Player Parent', 'Student Parent'])
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Unable to load parent accounts.'),
+          );
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LinearProgressIndicator();
+        }
+        final docs = snapshot.data?.docs ?? const [];
+        return DropdownButtonFormField<String>(
+          initialValue: selectedParentId,
+          isExpanded: true,
+          decoration: inputDecoration(
+            label: 'Link Parent Account',
+            icon: Icons.family_restroom_outlined,
+          ),
+          hint: const Text('Select the parent account for this player'),
+          items: docs.map((doc) {
+            final data = doc.data();
+            final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+            final email = data['email']?.toString() ?? '';
+            return DropdownMenuItem<String>(
+              value: doc.id,
+              child: Text(name.isEmpty ? email : '$name · $email', overflow: TextOverflow.ellipsis),
+            );
+          }).toList(),
+          onChanged: loading ? null : (value) {
+            if (value == null) {
+              setState(() { selectedParentId = null; });
+              return;
+            }
+            final doc = docs.firstWhere((d) => d.id == value);
+            final data = doc.data();
+            final name = '${data['firstName'] ?? ''} ${data['lastName'] ?? ''}'.trim();
+            final phone = data['phone']?.toString() ?? '';
+            setState(() {
+              selectedParentId = value;
+              if (name.isNotEmpty) guardianController.text = name;
+              if (phone.isNotEmpty) guardianPhoneController.text = phone;
+            });
+          },
+        );
+      },
+    );
+  }
+
   // ============================================================
   // INPUT DECORATION
   // ============================================================
@@ -384,7 +473,6 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final teamProvider = context.watch<TeamProvider>();
-    final coachProvider = context.watch<CoachProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -689,27 +777,7 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
 
                   const SizedBox(height: 16),
 
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedCoach,
-                    decoration: inputDecoration(
-                      label: 'Coach',
-                      icon: Icons.sports_outlined,
-                    ),
-                    hint: const Text('Assign coach (optional)'),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '',
-                        child: Text('No coach assigned yet'),
-                      ),
-                      ...coachProvider.coaches.where((coach) => coach.active).map(
-                        (coach) => DropdownMenuItem<String>(
-                          value: coach.id,
-                          child: Text(coach.fullName),
-                        ),
-                      ),
-                    ],
-                    onChanged: loading ? null : (value) => setState(() => selectedCoach = value),
-                  ),
+                  _buildCoachSelector(),
 
                   const SizedBox(height: 16),
 
@@ -826,6 +894,8 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
+                  _buildParentSelector(),
 
                   const SizedBox(height: 16),
 

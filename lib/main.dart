@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'firebase_options.dart';
 import 'app/app.dart';
+import 'app/theme_controller.dart';
 
 // ============================================================
 // AUTH PROVIDER
@@ -34,6 +35,7 @@ import 'features/coaches/data/services/coach_firestore_service.dart';
 import 'features/parents/presentation/providers/parent_provider.dart';
 import 'features/parents/data/parent_repository.dart';
 import 'features/matches/providers/fixture_provider.dart';
+import 'features/communication/data/notification_service.dart';
 
 Future<void> main() async {
   // Make sure Flutter is initialized before Firebase.
@@ -46,6 +48,10 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Register Firebase Cloud Messaging and local notification handling
+  // before the first frame so authenticated users receive academy alerts.
+  await NotificationService().initialize();
 
   // ==========================================================
   // TEAM REPOSITORY
@@ -76,6 +82,9 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<ThemeController>(
+          create: (_) => ThemeController()..load(),
+        ),
         // ------------------------------------------------------
         // AUTH
         // ------------------------------------------------------

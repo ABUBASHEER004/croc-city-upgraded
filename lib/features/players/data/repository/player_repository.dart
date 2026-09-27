@@ -11,6 +11,9 @@ class PlayerRepository {
   }
 
 
+  Stream<List<Player>> getPlayersByParent(String parentId) =>
+      _service.getPlayersByParent(parentId);
+
   Stream<List<Player>> getPlayersByCoach(String coachId) =>
       _service.getPlayersByCoach(coachId);
 

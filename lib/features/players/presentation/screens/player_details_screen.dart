@@ -12,9 +12,11 @@ class PlayerDetailsScreen extends StatefulWidget {
   const PlayerDetailsScreen({
     super.key,
     required this.playerId,
+    this.readOnly = false,
   });
 
   final String playerId;
+  final bool readOnly;
 
   @override
   State<PlayerDetailsScreen> createState() =>
@@ -165,17 +167,22 @@ class _PlayerDetailsScreenState
           }
 
           return _PlayerDetailsBody(
-            player: player,
-            onEdit: () {
-              context.push(
-                '/players/edit/${player.id}',
-              );
-            },
-            onDelete: () {
-              _deletePlayer(player);
-            },
-            formatDate: _formatDate,
+  player: player,
+  onEdit: widget.readOnly
+      ? null
+      : () {
+          context.push(
+            '/players/edit/${player.id}',
           );
+        },
+  onDelete: widget.readOnly
+      ? null
+      : () {
+          _deletePlayer(player);
+        },
+  formatDate: _formatDate,
+  readOnly: widget.readOnly,
+);
         },
       ),
     );
@@ -185,15 +192,17 @@ class _PlayerDetailsScreenState
 class _PlayerDetailsBody extends StatelessWidget {
   const _PlayerDetailsBody({
     required this.player,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
     required this.formatDate,
+    this.readOnly = false,
   });
 
   final Player player;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final String Function(DateTime) formatDate;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -336,35 +345,35 @@ class _PlayerDetailsBody extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 8),
-
-        SizedBox(
-          height: 52,
-          child: FilledButton.icon(
-            onPressed: onEdit,
-            icon: const Icon(
-              Icons.edit_outlined,
-            ),
-            label: const Text(
-              'Edit Player',
+        if (!readOnly) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: () => context.push('/players/results/${player.id}'),
+              icon: const Icon(Icons.assessment_outlined),
+              label: const Text('Manage Results'),
             ),
           ),
-        ),
-
-        const SizedBox(height: 10),
-
-        SizedBox(
-          height: 52,
-          child: OutlinedButton.icon(
-            onPressed: onDelete,
-            icon: const Icon(
-              Icons.delete_outline,
-            ),
-            label: const Text(
-              'Delete Player',
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Edit Player'),
             ),
           ),
-        ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Delete Player'),
+            ),
+          ),
+        ],
       ],
     );
   }

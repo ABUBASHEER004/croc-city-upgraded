@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/app_user.dart';
@@ -24,8 +25,19 @@ class AuthService {
     required String password,
   }) async {
     try {
+      var identifier = email.trim();
+      if (!identifier.contains('@')) {
+        final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
+            .httpsCallable('resolveUsername');
+        final result = await callable.call({'username': identifier});
+        final data = Map<String, dynamic>.from(result.data as Map);
+        identifier = data['email']?.toString() ?? '';
+        if (identifier.isEmpty) {
+          throw Exception('Username could not be resolved. Contact the administrator.');
+        }
+      }
       return await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
+        email: identifier,
         password: password,
       );
     } on FirebaseAuthException catch (e) {
@@ -63,6 +75,7 @@ class AuthService {
         firstName: firstName,
         lastName: lastName,
         email: email.trim(),
+        username: email.trim().split('@').first,
         phone: phone,
         role: role,
         emailVerified: false,
@@ -141,6 +154,7 @@ class AuthService {
           firstName: firstName,
           lastName: lastName,
           email: user.email ?? "",
+          username: (user.email ?? '').split('@').first,
           phone: user.phoneNumber ?? "",
           role: "Player",
           emailVerified: user.emailVerified,
@@ -161,9 +175,15 @@ class AuthService {
 
   Future<void> sendPasswordReset(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(
-        email: email.trim(),
-      );
+      var identifier = email.trim();
+      if (!identifier.contains('@')) {
+        final callable = FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('resolveUsername');
+        final result = await callable.call({'username': identifier});
+        final data = Map<String, dynamic>.from(result.data as Map);
+        identifier = data['email']?.toString() ?? '';
+      }
+      if (identifier.isEmpty) throw Exception('Username could not be resolved.');
+      await _auth.sendPasswordResetEmail(email: identifier);
     } on FirebaseAuthException catch (e) {
       throw Exception(_firebaseError(e));
     }

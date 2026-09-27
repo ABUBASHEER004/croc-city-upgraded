@@ -104,14 +104,14 @@ class _ForgotPasswordScreenState
                     const AuthHeader(
                       title: "Reset Password",
                       subtitle:
-                          "Enter your email to receive a password reset link.",
+                          "Enter your username or email to receive a password reset link.",
                     ),
 
                     const SizedBox(height: 40),
 
                     AuthTextField(
                       controller: emailController,
-                      label: "Email Address",
+                      label: "Username or Email",
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
@@ -120,16 +120,13 @@ class _ForgotPasswordScreenState
                           return "Email is required";
                         }
 
-                        final emailRegex = RegExp(
-                          r'^[^@]+@[^@]+\.[^@]+$',
-                        );
-
-                        if (!emailRegex.hasMatch(
-                          value.trim(),
-                        )) {
-                          return "Enter a valid email";
+                        final input = value.trim();
+                        if (input.contains('@') && !RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(input)) {
+                          return "Enter a valid email or username";
                         }
-
+                        if (!input.contains('@') && !RegExp(r'^[a-zA-Z0-9._-]{3,}$').hasMatch(input)) {
+                          return "Enter a valid username";
+                        }
                         return null;
                       },
                     ),

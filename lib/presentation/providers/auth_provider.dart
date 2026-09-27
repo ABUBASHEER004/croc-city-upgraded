@@ -23,7 +23,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isAdmin => currentUser?.isAdmin ?? false;
   bool get isPlayer => currentUser?.isPlayer ?? false;
   bool get isParent => currentUser?.isParent ?? false;
+  bool get isPlayerParent => currentUser?.isPlayerParent ?? false;
+  bool get isStudentParent => currentUser?.isStudentParent ?? false;
+  bool get isStudent => currentUser?.isStudent ?? false;
   bool get isCoach => currentUser?.isCoach ?? false;
+  bool get isTeacher => currentUser?.isTeacher ?? false;
+  bool get isStaff => currentUser?.isStaff ?? false;
 
   Future<void> login({
     required String email,

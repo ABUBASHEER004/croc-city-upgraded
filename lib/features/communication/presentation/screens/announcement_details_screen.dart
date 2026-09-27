@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../dashboard/presentation/widgets/premium_ui.dart';
 
 class AnnouncementDetailsScreen extends StatelessWidget {
   const AnnouncementDetailsScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Announcement Details Screen')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Announcement Details Screen is ready for academy data integration.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => PremiumFeatureScreen(
+    title: 'Announcement details', eyebrow: 'Academy news', description: 'A distraction-free reading view for important academy communications.', icon: Icons.article_rounded,
+    actions: const [
+      PremiumFeatureAction(title: 'Rich updates', subtitle: 'Keep the message, timing and audience clear.', icon: Icons.article_outlined),
+PremiumFeatureAction(title: 'Action points', subtitle: 'Turn important announcements into next steps.', icon: Icons.task_alt_rounded)
+    ],
+  );
 }

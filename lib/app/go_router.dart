@@ -1,15 +1,16 @@
+import '../features/calendar/presentation/screens/academy_calendar_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
-import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/auth/presentation/screens/verify_email_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/players/presentation/screens/add_player_screen.dart';
 import '../features/players/presentation/screens/edit_player_screen.dart';
 import '../features/players/presentation/screens/player_details_screen.dart';
+import '../features/players/presentation/screens/player_result_screen.dart';
 import '../features/players/presentation/screens/players_screen.dart';
 import '../features/splash/presentation/screens/splash_screen.dart';
 import '../features/teams/presentation/screens/add_team_screen.dart';
@@ -28,11 +29,13 @@ import '../features/coaches/presentation/screens/edit_coach_screen.dart';
 import '../features/coaches/presentation/screens/coach_players_screen.dart';
 import '../features/coaches/presentation/screens/player_coach_selection_screen.dart';
 import '../features/parents/presentation/screens/parents_screen.dart';
+import '../features/parents/presentation/screens/parent_children_screen.dart';
 import '../features/fixtures/presentation/screens/fixtures_screen.dart';
 import '../features/attendance/presentation/screens/attendance_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/training/presentation/screens/training_screen.dart';
-import '../features/announcements/presentation/screens/announcements_screen.dart';
+import '../features/communication/presentation/screens/announcements_screen.dart';
+import '../features/communication/presentation/screens/notifications_screen.dart';
 import '../features/finance/presentation/screens/finance_dashboard_screen.dart';
 import '../features/finance/presentation/screens/create_invoice_screen.dart';
 import '../features/finance/presentation/screens/fee_categories_screen.dart';
@@ -58,10 +61,6 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/register',
-        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -108,6 +107,11 @@ class AppRouter {
         builder: (context, state) => const AnnouncementsScreen(),
       ),
       GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(path: '/calendar', builder: (context, state) => const AcademyCalendarScreen()),
+      GoRoute(
         path: '/finance',
         builder: (context, state) => const FinanceDashboardScreen(),
       ),
@@ -132,6 +136,12 @@ class AppRouter {
         builder: (context, state) => const FinanceDashboardScreen(),
       ),
       GoRoute(
+        path: '/parent/children',
+        builder: (context, state) => ParentChildrenScreen(
+          user: context.read<AuthProvider>().currentUser!,
+        ),
+      ),
+      GoRoute(
         path: '/players',
         builder: (context, state) => const PlayersScreen(),
       ),
@@ -142,6 +152,12 @@ class AppRouter {
       GoRoute(
         path: '/players/details/:id',
         builder: (context, state) => PlayerDetailsScreen(
+          playerId: state.pathParameters['id']!,
+        ),
+      ),
+      GoRoute(
+        path: '/players/results/:id',
+        builder: (context, state) => PlayerResultScreen(
           playerId: state.pathParameters['id']!,
         ),
       ),

@@ -47,7 +47,7 @@ flutter pub get
 flutter run
 ```
 
-Log in on the normal Login screen using the administrator email and password. The app reads the admin custom claim and opens the Admin Dashboard. Public registration supports Player, Parent and Coach. Administrator registration remains intentionally restricted to the trusted admin setup tool.
+Log in on the normal Login screen using the administrator email and password. The app reads the admin custom claim and opens the Admin Dashboard. Public registration is disabled. Only the administrator can create Player, Player Parent, Coach, Student and Student Parent accounts from the Administrator Dashboard. The administrator then gives each user their username and temporary password.
 
 ## 5. Security rules
 

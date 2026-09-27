@@ -1,21 +1,14 @@
 import 'package:flutter/material.dart';
+import '../../../dashboard/presentation/widgets/premium_ui.dart';
 
 class MatchSummaryScreen extends StatelessWidget {
   const MatchSummaryScreen({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Match Summary Screen')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Match Summary Screen is ready for academy data integration.',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => PremiumFeatureScreen(
+    title: 'Match summary', eyebrow: 'Post-match', description: 'Present the final score and performance story beautifully.', icon: Icons.summarize_rounded,
+    actions: const [
+      PremiumFeatureAction(title: 'Performance', subtitle: 'Capture the result and major match statistics.', icon: Icons.analytics_rounded),
+PremiumFeatureAction(title: 'Player impact', subtitle: 'Highlight standout contributions from the squad.', icon: Icons.emoji_events_rounded)
+    ],
+  );
 }

@@ -8,6 +8,10 @@ class Announcement {
     required this.publishedAt,
     required this.priority,
     required this.audience,
+    this.audiences = const [],
+    this.recipientEmails = const [],
+    this.recipientUserIds = const [],
+    this.audienceKeys = const [],
     required this.publishedBy,
     required this.publishedByName,
     required this.active,
@@ -19,6 +23,10 @@ class Announcement {
   final DateTime publishedAt;
   final String priority;
   final String audience;
+  final List<String> audiences;
+  final List<String> recipientEmails;
+  final List<String> recipientUserIds;
+  final List<String> audienceKeys;
   final String publishedBy;
   final String publishedByName;
   final bool active;
@@ -29,6 +37,10 @@ class Announcement {
         'publishedAt': Timestamp.fromDate(publishedAt),
         'priority': priority,
         'audience': audience,
+        'audiences': audiences.isEmpty ? [audience] : audiences,
+        'recipientEmails': recipientEmails,
+        'recipientUserIds': recipientUserIds,
+        'audienceKeys': audienceKeys.isEmpty ? [audience, ...recipientEmails.map((e) => 'email:${e.toLowerCase()}'), ...recipientUserIds.map((id) => 'uid:$id')] : audienceKeys,
         'publishedBy': publishedBy,
         'publishedByName': publishedByName,
         'active': active,
@@ -49,6 +61,10 @@ class Announcement {
       publishedAt: date,
       priority: map['priority']?.toString() ?? 'Normal',
       audience: map['audience']?.toString() ?? 'Everyone',
+      audiences: (map['audiences'] is Iterable) ? List<String>.from((map['audiences'] as Iterable).map((e) => e.toString())) : [map['audience']?.toString() ?? 'Everyone'],
+      recipientEmails: (map['recipientEmails'] is Iterable) ? List<String>.from((map['recipientEmails'] as Iterable).map((e) => e.toString().toLowerCase())) : const [],
+      recipientUserIds: (map['recipientUserIds'] is Iterable) ? List<String>.from((map['recipientUserIds'] as Iterable).map((e) => e.toString())) : const [],
+      audienceKeys: (map['audienceKeys'] is Iterable) ? List<String>.from((map['audienceKeys'] as Iterable).map((e) => e.toString())) : [map['audience']?.toString() ?? 'Everyone'],
       publishedBy: map['publishedBy']?.toString() ?? '',
       publishedByName: map['publishedByName']?.toString() ?? 'Academy',
       active: map['active'] != false,
@@ -62,6 +78,10 @@ class Announcement {
     DateTime? publishedAt,
     String? priority,
     String? audience,
+    List<String>? audiences,
+    List<String>? recipientEmails,
+    List<String>? recipientUserIds,
+    List<String>? audienceKeys,
     String? publishedBy,
     String? publishedByName,
     bool? active,
@@ -73,6 +93,10 @@ class Announcement {
         publishedAt: publishedAt ?? this.publishedAt,
         priority: priority ?? this.priority,
         audience: audience ?? this.audience,
+        audiences: audiences ?? this.audiences,
+        recipientEmails: recipientEmails ?? this.recipientEmails,
+        recipientUserIds: recipientUserIds ?? this.recipientUserIds,
+        audienceKeys: audienceKeys ?? this.audienceKeys,
         publishedBy: publishedBy ?? this.publishedBy,
         publishedByName: publishedByName ?? this.publishedByName,
         active: active ?? this.active,

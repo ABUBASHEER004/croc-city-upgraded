@@ -15,6 +15,7 @@ class Player {
   final String position;
   final int jerseyNumber;
   final String preferredFoot;
+  final String parentId;
   final String parentName;
   final String parentPhone;
   final String emergencyContact;
@@ -38,6 +39,7 @@ class Player {
     required this.position,
     required this.jerseyNumber,
     required this.preferredFoot,
+    this.parentId = '',
     required this.parentName,
     required this.parentPhone,
     required this.emergencyContact,
@@ -79,6 +81,7 @@ class Player {
       position: map['position']?.toString() ?? '',
       jerseyNumber: _intValue(map['jerseyNumber']),
       preferredFoot: map['preferredFoot']?.toString() ?? 'Right',
+      parentId: map['parentId']?.toString() ?? '',
       parentName: map['parentName']?.toString() ?? '',
       parentPhone: map['parentPhone']?.toString() ?? '',
       emergencyContact: map['emergencyContact']?.toString() ?? '',
@@ -105,6 +108,7 @@ class Player {
       'position': position,
       'jerseyNumber': jerseyNumber,
       'preferredFoot': preferredFoot,
+      'parentId': parentId,
       'parentName': parentName,
       'parentPhone': parentPhone,
       'emergencyContact': emergencyContact,
@@ -130,6 +134,7 @@ class Player {
     String? position,
     int? jerseyNumber,
     String? preferredFoot,
+    String? parentId,
     String? parentName,
     String? parentPhone,
     String? emergencyContact,
@@ -153,6 +158,7 @@ class Player {
       position: position ?? this.position,
       jerseyNumber: jerseyNumber ?? this.jerseyNumber,
       preferredFoot: preferredFoot ?? this.preferredFoot,
+      parentId: parentId ?? this.parentId,
       parentName: parentName ?? this.parentName,
       parentPhone: parentPhone ?? this.parentPhone,
       emergencyContact: emergencyContact ?? this.emergencyContact,

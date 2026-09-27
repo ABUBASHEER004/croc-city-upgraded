@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../../presentation/providers/auth_provider.dart';
+import '../../../../app/theme_controller.dart';
 import '../../../../services/profile_photo_service.dart';
 import '../widgets/profile_photo_picker.dart';
 
@@ -143,6 +144,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: Icons.shield_outlined,
             label: 'Account role',
             value: user.role,
+          ),
+          Card(
+            child: Consumer<ThemeController>(
+              builder: (context, controller, _) => ListTile(
+                leading: Icon(controller.isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded),
+                title: const Text('Appearance', style: TextStyle(fontWeight: FontWeight.w800)),
+                subtitle: Text(controller.isDark ? 'Dark theme' : controller.mode == ThemeMode.system ? 'System theme' : 'Light theme'),
+                trailing: Switch.adaptive(
+                  value: controller.isDark,
+                  onChanged: (value) => controller.setMode(value ? ThemeMode.dark : ThemeMode.light),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           OutlinedButton.icon(
